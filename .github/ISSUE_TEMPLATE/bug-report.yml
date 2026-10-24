@@ -1,0 +1,32 @@
+name: Bug report
+description: Report a reproducible compatibility or privacy-layer issue.
+body:
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, OS, userscript manager, and their versions.
+    validations:
+      required: true
+  - type: dropdown
+    id: profile
+    attributes:
+      label: Active profile
+      options:
+        - Stable
+        - Hardened
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include steps, expected behavior, actual behavior, and whether disabling the script fixes it. Remove private data.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Installation diagnostics
+      description: Result of window[Symbol.for('BrowserPrivacyCore.v6')], without browsing data or secrets.
+      render: json
