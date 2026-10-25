@@ -1,5 +1,9 @@
 # Browser Privacy Core
 
+[![CI](https://github.com/NeonTideX/browser-privacy-core/actions/workflows/ci.yml/badge.svg)](https://github.com/NeonTideX/browser-privacy-core/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/NeonTideX/browser-privacy-core)](https://github.com/NeonTideX/browser-privacy-core/releases/latest)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
+
 Two browser privacy userscripts, one shared core. A clean successor to Browser Privacy Core V5.5, V5.6, and V5.7.
 
 **Stable** favors everyday compatibility. **Hardened** trades more compatibility for stronger restrictions on selected fingerprinting surfaces. Both run locally, make no telemetry requests, and ship as readable, standalone JavaScript with no runtime dependencies.
@@ -86,6 +90,13 @@ docs/                   Installation, architecture, migration, testing, and rele
 ```
 
 Edit `src/`, then rebuild. Commit `dist/` together with source changes; CI rejects stale artifacts. Configure profiles in [`src/profiles.js`](src/profiles.js). The build emits the metadata block and embeds one frozen profile in each script. Installation and automatic update URLs point to the public repository's `main` branch; see [publishing](docs/RELEASING.md).
+
+## Project resources
+
+- [Changelog](CHANGELOG.md) and [Releases](https://github.com/NeonTideX/browser-privacy-core/releases)
+- [Contributing](CONTRIBUTING.md), [community conduct](CODE_OF_CONDUCT.md), and [support](SUPPORT.md)
+- [Security policy](SECURITY.md)
+
 
 ## License and provenance
 

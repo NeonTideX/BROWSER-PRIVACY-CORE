@@ -11,3 +11,5 @@ Keep source, tests, comments, documentation, and issue discussions in English. C
 Preserve native receiver checks, exceptions, callbacks, permission behavior, and object brands where the policy permits. Do not claim undetectability, anonymity, or universal fingerprint protection. Document any new compatibility cost and uncovered path. Avoid new runtime dependencies and network activity in userscripts.
 
 Pull requests should explain the concrete behavior change, affected profile, validation performed, and remaining limitations. Do not include browser profiles, cookies, tokens, browsing history, `node_modules`, or downloaded browser binaries.
+
+See [community conduct](CODE_OF_CONDUCT.md), [support](SUPPORT.md), and the [release checklist](docs/RELEASING.md).

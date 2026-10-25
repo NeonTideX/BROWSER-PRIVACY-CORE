@@ -1,6 +1,15 @@
 # Changelog
 
-## 6.0.0 — 2026-10-24
+## [Unreleased]
+
+Changes after the latest published version will be recorded here.
+
+## [6.0.0] - 2026-10-25
+
+### Repository maintenance
+
+- Complete community guidance, support links, release metadata, and tagged distribution.
+- Upgrade the development-only Playwright dependency to 1.64.1 through reviewed pull request #1.
 
 ### Added
 
@@ -27,3 +36,6 @@
 - Device-derived seed fallback and no-op permission wrappers.
 
 V5.5, V5.6, and V5.7 are source inputs, not previous releases of this repository.
+
+[Unreleased]: https://github.com/NeonTideX/browser-privacy-core/compare/v6.0.0...HEAD
+[6.0.0]: https://github.com/NeonTideX/browser-privacy-core/releases/tag/v6.0.0

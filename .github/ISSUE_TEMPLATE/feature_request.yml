@@ -1,0 +1,17 @@
+name: Feature request
+description: Propose an improvement with explicit privacy and compatibility tradeoffs.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and affected profile
+      description: Describe the observable problem and whether it affects Stable, Hardened, or both.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior and tradeoffs
+      description: Explain the desired result, compatibility costs, and alternatives considered.
+    validations:
+      required: true
