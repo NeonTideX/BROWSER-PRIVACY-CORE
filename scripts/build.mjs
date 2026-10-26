@@ -7,7 +7,7 @@ import { Script } from 'node:vm';
 import { profiles } from '../src/profiles.js';
 
 export const root = fileURLToPath(new URL('../', import.meta.url));
-const files = ['core.js', 'modules/canvas.js', 'modules/navigator.js', 'modules/webgl.js',
+const files = ['core.js', 'frames.js', 'modules/canvas.js', 'modules/navigator.js', 'modules/webgl.js',
   'modules/webrtc.js', 'modules/audio.js', 'runtime.js'];
 
 export async function outputs() {
@@ -25,8 +25,8 @@ export async function outputs() {
     const filename = `browser-privacy-core.${config.id}.user.js`;
     const metadata = [
       '// ==UserScript==',
-      `// @name         Browser Privacy Core - ${config.name}`,
-      '// @namespace    urn:browser-privacy-core',
+      `// @name         Browser Privacy Core V${version.split('.')[0]} - ${config.name}`,
+      '// @namespace    urn:browser-privacy-core:v1',
       '// @homepageURL  https://github.com/NeonTideX/browser-privacy-core',
       '// @supportURL   https://github.com/NeonTideX/browser-privacy-core/issues',
       `// @downloadURL  https://raw.githubusercontent.com/NeonTideX/browser-privacy-core/main/dist/${filename}`,

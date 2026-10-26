@@ -27,7 +27,7 @@
   </style>
 </head>
 <body>
-  <div class="eyebrow">Local diagnostics / v6</div>
+  <div class="eyebrow">Local diagnostics / V1</div>
   <h1>Inspect the active profile.</h1>
   <p>Check whether Browser Privacy Core started in this page and inspect a few browser surfaces. Results stay here. This page does not measure anonymity or assign a privacy score.</p>
   <div class="actions">
@@ -48,7 +48,7 @@
   <footer>Install one profile at a time and reload after switching. An active marker reports initialization, not complete fingerprint protection. GPL-3.0-or-later.</footer>
   <script>
     'use strict';
-    const active = window[Symbol.for('BrowserPrivacyCore.v6')];
+    const active = window[Symbol.for('BrowserPrivacyCore')];
     document.getElementById('status').textContent = active
       ? `${active.profile.toUpperCase()} / ${active.version}`
       : 'No active profile detected. Install a script and reload.';

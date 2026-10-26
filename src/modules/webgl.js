@@ -2,9 +2,9 @@
 
 export function installWebGL(win, config, seed, patcher) {
   let installed = false;
-  for (const proto of [win.WebGLRenderingContext?.prototype, win.WebGL2RenderingContext?.prototype]) {
+  for (const proto of new Set([win.WebGLRenderingContext?.prototype, win.WebGL2RenderingContext?.prototype])) {
     if (!proto) continue;
-    installed = patcher.method(proto, 'getParameter', (target, receiver, args) => {
+    patcher.must(patcher.method(proto, 'getParameter', (target, receiver, args) => {
       let parameter;
       const adjusted = [...args];
       if (args.length) {
@@ -17,20 +17,21 @@ export function installWebGL(win, config, seed, patcher) {
       const enumValue = parameter >>> 0;
       if ((enumValue === 0x9245 || enumValue === 0x9246) && typeof result === 'string') return 'WebGL';
       return result;
-    }) || installed;
+    }), 'WebGL.getParameter');
+    installed = true;
     if (config.webgl !== 'block-debug') continue;
-    patcher.method(proto, 'getExtension', (target, receiver, args) => {
+    patcher.must(patcher.method(proto, 'getExtension', (target, receiver, args) => {
       // Native conversion/validation happens exactly once, including exotic arguments.
       const result = Reflect.apply(target, receiver, args);
       if (result && win.WebGLDebugRendererInfo && result instanceof win.WebGLDebugRendererInfo) return null;
       // Some engines do not expose an interface constructor for this extension.
       if (result && 'UNMASKED_VENDOR_WEBGL' in result && 'UNMASKED_RENDERER_WEBGL' in result) return null;
       return result;
-    });
-    patcher.method(proto, 'getSupportedExtensions', (target, receiver, args) => {
+    }), 'WebGL.getExtension');
+    patcher.must(patcher.method(proto, 'getSupportedExtensions', (target, receiver, args) => {
       const list = Reflect.apply(target, receiver, args);
       return list?.filter(name => name.toLowerCase() !== 'webgl_debug_renderer_info') ?? list;
-    });
+    }), 'WebGL.getSupportedExtensions');
   }
   return installed;
 }

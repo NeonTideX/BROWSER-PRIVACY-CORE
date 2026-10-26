@@ -43,25 +43,26 @@ export function installCanvas(win, config, seed, patcher) {
   }
 
   for (const key of ['toDataURL', 'toBlob']) {
-    patcher.method(canvasProto, key, (target, receiver, args) => {
+    patcher.must(patcher.method(canvasProto, key, (target, receiver, args) => {
       let copy;
       try { copy = snapshot(receiver, false); } catch { /* Native call preserves taint and receiver errors. */ }
       // Keep callbacks, coercion, and native exceptions outside the fallback catch.
       return Reflect.apply(target, copy ?? receiver, args);
-    });
+    }), `canvas.${key}`);
   }
 
   if (offscreenProto) {
-    patcher.method(offscreenProto, 'convertToBlob', (target, receiver, args) => {
+    patcher.must(patcher.method(offscreenProto, 'convertToBlob', (target, receiver, args) => {
       let copy;
       try { copy = snapshot(receiver, true); } catch { /* Unsupported or detached surface. */ }
       return Reflect.apply(target, copy ?? receiver, args);
-    });
+    }), 'OffscreenCanvas.convertToBlob');
   }
 
   if (config.canvasReadback) {
     for (const proto of new Set([contextProto, offscreenContextProto])) {
-      patcher.method(proto, 'getImageData', (target, receiver, args) => {
+      if (!proto) continue;
+      patcher.must(patcher.method(proto, 'getImageData', (target, receiver, args) => {
         const coordinates = [];
         const adjusted = [...args];
         if (args.length >= 4) {
@@ -82,7 +83,7 @@ export function installCanvas(win, config, seed, patcher) {
             receiver.canvas.width, receiver.canvas.height, x, y);
         }
         return image;
-      });
+      }), '2D.getImageData');
     }
   }
   return true;

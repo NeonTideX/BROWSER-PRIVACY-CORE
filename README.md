@@ -1,4 +1,4 @@
-# Browser Privacy Core
+# Browser Privacy Core V1
 
 [![CI](https://github.com/NeonTideX/browser-privacy-core/actions/workflows/ci.yml/badge.svg)](https://github.com/NeonTideX/browser-privacy-core/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/NeonTideX/browser-privacy-core)](https://github.com/NeonTideX/browser-privacy-core/releases/latest)
@@ -10,11 +10,13 @@ Two browser privacy userscripts, one shared core. A clean successor to Browser P
 
 ## Install
 
+**Migrating from 6.x? Reinstall V1 manually.** V1 starts a new `1.x` version line with new userscript names and namespace. Managers generally do not treat `1.0.0` as an upgrade from `6.0.0`. Disable or remove the old scripts, install exactly one V1 profile, and reload. The compatibility guard prevents the old and new cores from stacking; the first active core wins until reload.
+
 1. Use a userscript manager that supports execution in the page's JavaScript realm. Violentmonkey is the primary target; Tampermonkey is a compatibility target that needs manual verification.
 2. Install one profile from the public repository:
    - [Install Stable](https://raw.githubusercontent.com/NeonTideX/browser-privacy-core/main/dist/browser-privacy-core.stable.user.js) — recommended for everyday use.
    - [Install Hardened](https://raw.githubusercontent.com/NeonTideX/browser-privacy-core/main/dist/browser-privacy-core.hardened.user.js) — stricter restrictions, with the tradeoffs below.
-3. Confirm installation in your manager, disable all V5.x versions and other copies, then reload open tabs.
+3. Confirm installation in your manager, disable all V5.x/6.x versions and other copies, then reload open tabs.
 
 Install **one profile at a time**. The first profile installed in a document wins. You do not need Node.js or a build step to use either script. If opening a local file does not launch your manager, create a new script in its editor and paste the complete file. On GitHub, open the script's **Raw** view.
 
@@ -45,17 +47,17 @@ These scripts reduce selected JavaScript-visible signals. They do **not** provid
 
 Canvas protection keeps the source unchanged and uses the same coordinate-based mask across supported reads and lossless exports. It modifies selected fully opaque 8-bit RGB pixels by at most one per channel; alpha, transparent pixels, and unsupported pixel formats stay native. Stable skips export snapshots over 4,194,304 pixels; Hardened skips exports or individual readback results over 8,388,608 pixels. Very small, transparent, oversized, color-managed, lossy, or unsupported surfaces may reveal original information. Direct WebGL `readPixels`, workers, service workers, WebGPU, fonts, network headers, and many other fingerprinting surfaces are outside this project's coverage.
 
-The seed is random and stored in origin-scoped `sessionStorage`. It is stable across reloads in the same tab, not a persistent cross-site identity. Storage-denied contexts use a fresh document seed. Same-origin frames receive the full core where accessible; cross-origin frames require the manager to execute the script in those frames. A userscript cannot guarantee that it beats every page script or every frame's first instruction. See [threat model and limitations](docs/THREAT-MODEL.md).
+The seed is random and stored in origin-scoped `sessionStorage`. It is stable across reloads in the same tab, not a persistent cross-site identity. Storage-denied pages use a fresh seed; frames installed by that runtime share the seed for their origin. Same-origin frames receive the full core where accessible; cross-origin frames require the manager to execute the script in those frames. A userscript cannot guarantee that it beats every page script or every frame's first instruction. See [threat model and limitations](docs/THREAT-MODEL.md).
 
 ## Verify an installation
 
 In a page's developer console:
 
 ```js
-window[Symbol.for('BrowserPrivacyCore.v6')]
+window[Symbol.for('BrowserPrivacyCore')]
 ```
 
-The frozen diagnostic object reports the version, selected profile, and module status. It contains no seed. `enabled` means the module started, `inactive` means disabled by the profile or absent in the browser, and `unavailable` means installation encountered an error. It is a diagnostic aid, not proof that every surface is covered.
+The frozen diagnostic object reports the version, selected profile, and module status. It contains no seed. `enabled` means the module started, `inactive` means disabled by the profile or absent in the browser, and `unavailable` means installation encountered an error. Failed module installation rolls back its reversible patches so a locked API does not silently leave that module half-installed. `nativeSources` reports the cosmetic function-source compatibility layer separately. Diagnostics are not proof that every surface is covered.
 
 For a local diagnostic page:
 
@@ -75,9 +77,12 @@ npm run build
 npm run check
 npx playwright install chromium
 npm run test:browser
+npm run benchmark
 ```
 
 `npm run check` works without installing dependencies because the build and unit tests use Node built-ins. Playwright is the only direct development dependency and is pinned in `package-lock.json`. CI additionally runs the browser suite on Firefox. Real userscript-manager injection remains a manual test; see [testing](docs/TESTING.md).
+
+V1 selects one pixel candidate per deterministic coordinate block instead of hashing every pixel. Crop alignment, source preservation, alpha handling, and idempotence are retained. The benchmark compares masking cost with the previous published scan; codec and canvas-copy costs are excluded, and timings depend on the machine.
 
 ```text
 src/                    Shared core and profile configuration

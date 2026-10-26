@@ -117,3 +117,96 @@ test('patcher preserves descriptors, method identity metadata, receiver validati
   const locked = Object.freeze({ method() {} });
   assert.equal(patcher.method(locked, 'method', () => 1), false);
 });
+
+test('failed modules roll back their descriptors without undoing successful earlier modules', () => {
+  const win = vm.runInNewContext('({ Function, Proxy, Error })');
+  const patcher = createPatcher(win);
+  const owner = { earlier() { return 1; }, later() { return 2; } };
+  patcher.transaction(() => patcher.method(owner, 'earlier', () => 7));
+  const before = Object.getOwnPropertyDescriptors(owner);
+  assert.throws(() => patcher.transaction(() => {
+    patcher.method(owner, 'later', () => 8);
+    patcher.must(false, 'locked API');
+  }), /locked API/);
+  assert.deepEqual(Object.getOwnPropertyDescriptors(owner), before);
+  assert.equal(owner.earlier(), 7);
+  assert.equal(owner.later(), 2);
+});
+
+test('inactive and nested transactions restore the complete original descriptor', () => {
+  const win = vm.runInNewContext('({ Function, Proxy, Error })');
+  const patcher = createPatcher(win);
+  const owner = {};
+  Object.defineProperty(owner, 'value', { get() { return 3; }, configurable: true, enumerable: false });
+  const original = Object.getOwnPropertyDescriptor(owner, 'value');
+  assert.equal(patcher.transaction(() => {
+    patcher.replace(owner, 'value', { value: 10, writable: true });
+    assert.equal(owner.value, 10);
+    return false;
+  }), false);
+  assert.deepEqual(Object.getOwnPropertyDescriptor(owner, 'value'), original);
+  assert.throws(() => patcher.transaction(() => {
+    patcher.getter(owner, 'value', () => 4);
+    patcher.transaction(() => patcher.getter(owner, 'value', () => 5));
+    throw new Error('outer failure');
+  }), /outer failure/);
+  assert.deepEqual(Object.getOwnPropertyDescriptor(owner, 'value'), original);
+});
+
+test('sparse blocks stay within their density bound across seeds and both profiles', () => {
+  for (const seed of [0, 1, 42, 1000, 0xffffffff]) {
+    for (const stride of [128, 3072]) {
+      const target = image(257, 135);
+      perturbPixels(target, seed, stride, target.width, target.height);
+      const blocks = new Set();
+      for (let pixel = 0; pixel < target.width * target.height; pixel++) {
+        const rgb = target.data.subarray(pixel * 4, pixel * 4 + 3);
+        if (rgb.every(value => value === 255)) continue;
+        const block = Math.floor(pixel / stride);
+        assert.ok(!blocks.has(block), 'At most one changed pixel per block');
+        blocks.add(block);
+      }
+      assert.ok(blocks.size > 0);
+      assert.ok(blocks.size <= Math.ceil(target.width * target.height / stride));
+    }
+  }
+});
+
+test('clipped, narrow and offset crops match a full surface across block boundaries', () => {
+  for (const stride of [1, 7, 128, 3072]) {
+    const full = image(97, 83);
+    perturbPixels(full, 80, stride, 97, 83);
+    for (const [x, y, width, height] of [[-5, -8, 30, 20], [93, 80, 20, 30], [10, 2, 1, 80], [0, 0, 97, 83]]) {
+      const crop = image(width, height);
+      perturbPixels(crop, 80, stride, 97, 83, x, y);
+      for (let row = 0; row < height; row++) for (let column = 0; column < width; column++) {
+        const inside = x + column >= 0 && x + column < 97 && y + row >= 0 && y + row < 83;
+        const expected = inside ? full.data.slice(((y + row) * 97 + x + column) * 4, ((y + row) * 97 + x + column) * 4 + 4) : new Uint8ClampedArray(4).fill(255);
+        assert.deepEqual(crop.data.slice((row * width + column) * 4, (row * width + column) * 4 + 4), expected);
+      }
+    }
+  }
+});
+
+test('invalid strides cannot hang or mutate pixels', () => {
+  for (const stride of [0, -1, NaN, Infinity, 0.5]) {
+    const target = image(8, 8);
+    perturbPixels(target, 1, stride, 8, 8);
+    assert.ok(target.data.every(value => value === 255));
+  }
+});
+
+test('source masking is idempotent and can be reinstalled after a transaction rollback', () => {
+  const win = vm.runInNewContext('({ Function, Proxy, Error })');
+  const patcher = createPatcher(win);
+  const original = win.Function.prototype.toString;
+  assert.throws(() => patcher.transaction(() => {
+    assert.equal(patcher.maskSources(), true);
+    throw new Error('abort mask');
+  }), /abort mask/);
+  assert.equal(win.Function.prototype.toString, original);
+  assert.equal(patcher.maskSources(), true);
+  const installed = win.Function.prototype.toString;
+  assert.equal(patcher.maskSources(), true);
+  assert.equal(win.Function.prototype.toString, installed);
+});

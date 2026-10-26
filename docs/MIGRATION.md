@@ -1,5 +1,13 @@
 # Migration from V5.x
 
+## V1 numbering and 6.x migration
+
+V1 (`1.0.0`) is the maintained release line after the previously published 6.0.0 version. The lower number is intentional. Users must manually install one V1 profile and disable every old script, because userscript managers generally will not offer a numeric downgrade as an update. V1 uses a new name/namespace and a version-independent diagnostic marker: `window[Symbol.for('BrowserPrivacyCore')]`.
+
+The 6.x diagnostic marker remains a guard alias, so old and new cores do not stack in the same document. The first active core wins until reload. V1 starts a new storage key, `__browser_privacy_core_seed_v1`, and a new block-based pixel mask. Existing seed entries are not deleted; old and V1 exported fingerprints should not be expected to match. Within V1, reload, crop, and lossless export consistency remain covered by tests.
+
+This release also adds reversible module-installation transactions, separates frame lifecycle code, shares fallback seeds with frames installed by the same runtime, and includes all community documents in release source packages. The historical V5.x-to-6.x design notes below remain for provenance.
+
 ## Input provenance
 
 The project was reconstructed from these three user-supplied files. The originals remain outside the new repository. Hashes identify the exact inputs; they are not a claim about authorship or upstream licensing.
@@ -32,11 +40,11 @@ The project is released under the user's requested `GPL-3.0-or-later` terms. Pre
 
 V6 Stable is inspired by V5.5's compatibility goal, not a byte-for-byte feature superset. V6 Hardened is the strictest bundled policy, not a claim that it covers every browser fingerprint surface.
 
-## Upgrade procedure
+## Current upgrade procedure
 
-1. Disable or remove all three legacy scripts and any previous V6 profile.
-2. Install exactly one V6 script from `dist/`.
+1. Disable or remove all legacy V5.x/6.x scripts and previous copies.
+2. Manually install exactly one V1 script from `dist/`.
 3. Reload affected pages. Restart active calls or offline audio tasks before comparing behavior.
 4. Check the diagnostic object and test sites you rely on.
 
-Legacy seed keys are not migrated. V6 uses a new origin/session storage key. Disabling V6 and reloading returns browser APIs to their normal state unless another extension or script also patches them.
+Legacy seed keys are not migrated. V1 uses `__browser_privacy_core_seed_v1`. Disabling V1 and reloading returns browser APIs to their normal state unless another extension or script also patches them.

@@ -9,6 +9,10 @@ npm run check
 
 The fast suite verifies deterministic hashing, seed/storage behavior, bounded/idempotent pixels, crop consistency, transparency, cross-realm typed arrays, hardware caps, WebRTC dictionary semantics, patch descriptors/receiver checks, standalone metadata, checksums, and synchronized generated output. It uses only Node built-ins.
 
+V1 additionally checks transaction rollback and nesting, preservation of earlier successful modules, descriptor-kind conversion, sparse density bounds, clipped/narrow crops, and invalid strides. Browser regressions lock canvas/RTC methods to verify rollback, compare frame exports with storage denied, and cover the legacy 6.x guard.
+
+Run `npm run benchmark` to compare the old per-pixel scan with V1 block selection. It measures a 1920x1080 opaque RGBA mask, reports median timings after warmup, and excludes canvas snapshots, encoding, and GPU transfer. It is a diagnostic benchmark, not a timing-sensitive test or end-to-end speed guarantee.
+
 ## Real browsers
 
 ```sh

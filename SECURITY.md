@@ -6,4 +6,4 @@ For a sensitive vulnerability, use [GitHub private vulnerability reporting](http
 
 Include the browser/manager versions, active profile, a minimal reproduction, expected and actual behavior, and affected surfaces. Ordinary compatibility issues can use the bug-report issue form. Remove cookies, tokens, private URLs, identifiers, and browser profile data before sharing logs.
 
-The currently maintained source line is V6. Legacy V5.x files are not maintained here.
+The currently maintained source line is V1 (`1.x`). Legacy V5.x and 6.x builds are not maintained here.

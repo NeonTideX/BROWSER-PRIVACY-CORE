@@ -6,6 +6,8 @@ import { pathToFileURL } from 'node:url';
 import { join } from 'node:path';
 import { root } from './build.mjs';
 
+const { version } = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
+
 const playwright = process.env.PLAYWRIGHT_MODULE_PATH
   ? await import(pathToFileURL(join(process.env.PLAYWRIGHT_MODULE_PATH, 'index.mjs')).href)
   : await import('playwright');
@@ -68,8 +70,8 @@ try {
       };
     });
     await page.addScriptTag({ content: script });
-    const result = await page.evaluate(async profile => {
-      const status = window[Symbol.for('BrowserPrivacyCore.v6')];
+    const result = await page.evaluate(async ({ profile, version }) => {
+      const status = window[Symbol.for('BrowserPrivacyCore')];
       const canvas = document.createElement('canvas');
       canvas.width = 256; canvas.height = 128;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -99,6 +101,15 @@ try {
       try { ctx.getImageData(0, 0, 0, 1); } catch (error) { invalidSize = error.name === 'IndexSizeError'; }
       const cropped = ctx.getImageData(40, 30, 100, 70).data;
       const negative = ctx.getImageData(140, 100, -100, -70).data;
+      const outside = ctx.getImageData(-10, -5, 300, 150).data;
+      let paddingCorrect = true;
+      for (let row = 0; row < 150; row++) for (let column = 0; column < 300; column++) {
+        const x = column - 10; const y = row - 5;
+        for (let channel = 0; channel < 4; channel++) {
+          const expected = x >= 0 && x < 256 && y >= 0 && y < 128 ? readPixels[(y * 256 + x) * 4 + channel] : 0;
+          if (outside[(row * 300 + column) * 4 + channel] !== expected) paddingCorrect = false;
+        }
+      }
       let coordinateConversions = 0;
       const coerced = ctx.getImageData({ valueOf() { coordinateConversions++; return 0; } }, '0', 256, 128).data;
       let coordinateRange = false;
@@ -120,7 +131,7 @@ try {
         exportsAgree: equal(urlPixels, blobPixels),
         sourceUnchanged: equal(rawBefore, rawAfter),
         readbackCorrect: equal(readPixels, profile === 'hardened' ? urlPixels : rawBefore),
-        cropMatches, negativeMatches: equal(cropped, negative),
+        cropMatches, paddingCorrect, negativeMatches: equal(cropped, negative),
         coordinateCoercion: equal(coerced, readPixels) && coordinateConversions === 1,
         coordinateRange,
         invalidReceiver, invalidCallback, invalidSize,
@@ -133,11 +144,12 @@ try {
         hardware: navigator.hardwareConcurrency <= __native.cores,
         rtcUntouched: __native.rtc === window.RTCPeerConnection,
         markerFrozen: Object.isFrozen(beforeMarker) && Object.isFrozen(beforeMarker.modules),
+        versionCorrect: status.version === version && window[Symbol.for('BrowserPrivacyCore.v6')] === status,
       };
-    }, profile);
+    }, { profile, version });
     for (const key of ['repeated', 'changed', 'bounded', 'exportsAgree', 'sourceUnchanged', 'readbackCorrect',
-      'cropMatches', 'negativeMatches', 'coordinateCoercion', 'coordinateRange', 'invalidReceiver', 'invalidCallback', 'invalidSize',
-      'empty', 'nativeSource', 'apiIntegrity', 'hardware', 'markerFrozen']) {
+      'cropMatches', 'paddingCorrect', 'negativeMatches', 'coordinateCoercion', 'coordinateRange', 'invalidReceiver', 'invalidCallback', 'invalidSize',
+      'empty', 'nativeSource', 'apiIntegrity', 'hardware', 'markerFrozen', 'versionCorrect']) {
       check(result[key], `${profile}: ${key}`);
     }
     check(result.status.profile === profile, `${profile}: profile installed`);
@@ -171,7 +183,7 @@ try {
       }
       const frame = document.createElement('iframe');
       document.body.append(frame);
-      const frameStatus = frame.contentWindow[Symbol.for('BrowserPrivacyCore.v6')];
+      const frameStatus = frame.contentWindow[Symbol.for('BrowserPrivacyCore')];
       const frameCanvas = frame.contentDocument.createElement('canvas');
       frameCanvas.width = 256; frameCanvas.height = 128;
       const frameContext = frameCanvas.getContext('2d');
@@ -185,12 +197,12 @@ try {
       const loaded = new Promise(resolve => frame.addEventListener('load', resolve, { once: true }));
       frame.src = `${origin}/navigated-frame`;
       await loaded;
-      const frameAfterNavigation = frame.contentWindow[Symbol.for('BrowserPrivacyCore.v6')]?.profile === profile;
+      const frameAfterNavigation = frame.contentWindow[Symbol.for('BrowserPrivacyCore')]?.profile === profile;
       const container = document.createElement('div');
       container.innerHTML = '<section><iframe></iframe></section>';
       document.body.append(container);
       await new Promise(resolve => setTimeout(resolve, 0));
-      const nestedFrames = container.querySelector('iframe').contentWindow[Symbol.for('BrowserPrivacyCore.v6')]?.profile === profile;
+      const nestedFrames = container.querySelector('iframe').contentWindow[Symbol.for('BrowserPrivacyCore')]?.profile === profile;
       const url = localCanvas.toDataURL();
       const glCanvas = document.createElement('canvas');
       const gl = glCanvas.getContext('webgl');
@@ -279,7 +291,7 @@ try {
     // A second profile must not stack wrappers or silently switch the running profile.
     const otherScript = await readFile(join(root, 'dist', `browser-privacy-core.${profile === 'stable' ? 'hardened' : 'stable'}.user.js`), 'utf8');
     await page.addScriptTag({ content: otherScript });
-    check(await page.evaluate(profile => window[Symbol.for('BrowserPrivacyCore.v6')].profile === profile, profile), `${profile}: duplicate install guard`);
+    check(await page.evaluate(profile => window[Symbol.for('BrowserPrivacyCore')].profile === profile, profile), `${profile}: duplicate install guard`);
     await context.addInitScript({ content: script });
     await page.reload();
     const afterReload = await page.evaluate(() => {
@@ -303,8 +315,50 @@ try {
   const restrictedPage = await restricted.newPage();
   await restrictedPage.goto(origin);
   await restrictedPage.addScriptTag({ content: await readFile(join(root, 'dist/browser-privacy-core.hardened.user.js'), 'utf8') });
-  check(await restrictedPage.evaluate(() => window[Symbol.for('BrowserPrivacyCore.v6')]?.modules.canvas === 'enabled'), 'restricted storage and missing APIs');
+  check(await restrictedPage.evaluate(() => window[Symbol.for('BrowserPrivacyCore')]?.modules.canvas === 'enabled'), 'restricted storage and missing APIs');
+  check(await restrictedPage.evaluate(() => {
+    const frame = document.createElement('iframe'); document.body.append(frame);
+    function exportWhite(document) {
+      const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 128;
+      const context = canvas.getContext('2d'); context.fillStyle = '#fff'; context.fillRect(0, 0, 256, 128);
+      return canvas.toDataURL();
+    }
+    return exportWhite(document) === exportWhite(frame.contentDocument);
+  }), 'storage-denied same-origin frames share the runtime seed');
   await restricted.close();
+
+  const locked = await browser.newContext();
+  const lockedPage = await locked.newPage();
+  await lockedPage.goto(origin);
+  await lockedPage.evaluate(() => {
+    window.__locked = { url: HTMLCanvasElement.prototype.toDataURL, rtc: window.RTCPeerConnection,
+      rtcConstructor: window.RTCPeerConnection?.prototype.constructor };
+    Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', { configurable: false, writable: false });
+    if (window.RTCPeerConnection) Object.defineProperty(RTCPeerConnection.prototype, 'setConfiguration', { configurable: false, writable: false });
+  });
+  await lockedPage.addScriptTag({ content: await readFile(join(root, 'dist/browser-privacy-core.hardened.user.js'), 'utf8') });
+  const rollback = await lockedPage.evaluate(() => ({
+    canvas: window[Symbol.for('BrowserPrivacyCore')].modules.canvas === 'unavailable' && HTMLCanvasElement.prototype.toDataURL === __locked.url,
+    rtc: !__locked.rtc || window[Symbol.for('BrowserPrivacyCore')].modules.webrtc === 'unavailable' &&
+      window.RTCPeerConnection === __locked.rtc && RTCPeerConnection.prototype.constructor === __locked.rtcConstructor,
+    independent: window[Symbol.for('BrowserPrivacyCore')].modules.navigator === 'enabled',
+  }));
+  check(rollback.canvas, 'locked canvas API rolls back earlier export patches');
+  check(rollback.rtc, 'locked RTC reconfiguration rolls back constructor patches');
+  check(rollback.independent, 'unrelated modules continue after rollback');
+  await locked.close();
+
+  const legacy = await browser.newContext();
+  const legacyPage = await legacy.newPage();
+  await legacyPage.goto(origin);
+  await legacyPage.evaluate(() => {
+    window.__legacyURL = HTMLCanvasElement.prototype.toDataURL;
+    Object.defineProperty(window, Symbol.for('BrowserPrivacyCore.v6'), { value: { version: '6.0.0' } });
+  });
+  await legacyPage.addScriptTag({ content: await readFile(join(root, 'dist/browser-privacy-core.hardened.user.js'), 'utf8') });
+  check(await legacyPage.evaluate(() => !window[Symbol.for('BrowserPrivacyCore')] &&
+    HTMLCanvasElement.prototype.toDataURL === __legacyURL), 'legacy 6.x installation prevents mixed-version stacking');
+  await legacy.close();
   const diagnosticContext = await browser.newContext();
   await diagnosticContext.addInitScript({ content: await readFile(join(root, 'dist/browser-privacy-core.hardened.user.js'), 'utf8') });
   const diagnosticPage = await diagnosticContext.newPage();

@@ -12,4 +12,4 @@ Security vulnerabilities belong in [private vulnerability reports](https://githu
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Keep reports focused and provide enough information to reproduce the issue. Maintainers provide support on a best-effort basis; there is no response-time or compatibility guarantee.
 
-The maintained release line is 6.x and development continues on main. Older or modified builds may need to be reproduced against the current release before investigation.
+The maintained release line is V1 (`1.x`) and development continues on main. V1 intentionally replaces the older 6.x numbering; reinstall manually when migrating. Older or modified builds may need to be reproduced against the current release before investigation.

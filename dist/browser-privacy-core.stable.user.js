@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name         Browser Privacy Core - Stable
-// @namespace    urn:browser-privacy-core
+// @name         Browser Privacy Core V1 - Stable
+// @namespace    urn:browser-privacy-core:v1
 // @homepageURL  https://github.com/NeonTideX/browser-privacy-core
 // @supportURL   https://github.com/NeonTideX/browser-privacy-core/issues
 // @downloadURL  https://raw.githubusercontent.com/NeonTideX/browser-privacy-core/main/dist/browser-privacy-core.stable.user.js
 // @updateURL    https://raw.githubusercontent.com/NeonTideX/browser-privacy-core/main/dist/browser-privacy-core.stable.user.js
-// @version      6.0.0
+// @version      1.0.0
 // @description  Compatibility-first canvas and hardware privacy.
 // @match        http://*/*
 // @match        https://*/*
@@ -36,12 +36,17 @@ function mix32(value) {
   return (value ^ (value >>> 16)) >>> 0;
 }
 
-function getSeed(win) {
-  const key = '__browser_privacy_core_seed_v6';
+function getOrigin(win) {
   let origin = win.location.origin;
   if (origin === 'null') {
     try { origin = win.parent.location.origin; } catch { /* Opaque or cross-origin. */ }
   }
+  return origin;
+}
+
+function getSeed(win) {
+  const key = '__browser_privacy_core_seed_v1';
+  const origin = getOrigin(win);
   let stored;
   try { stored = win.sessionStorage.getItem(key); } catch { /* Storage can be denied. */ }
   if (!/^[a-f0-9]{32}$/.test(stored ?? '')) {
@@ -63,13 +68,23 @@ function getSeed(win) {
 function createPatcher(win) {
   const nativeSources = new WeakMap();
   const originalToString = win.Function.prototype.toString;
-  let sourceMaskInstalled = false;
+  const changes = [];
+  let maskedToString;
 
   function replace(owner, key, descriptor, original) {
     if (!owner) return false;
     const current = Object.getOwnPropertyDescriptor(owner, key);
     if (!current || !current.configurable && !current.writable) return false;
-    Object.defineProperty(owner, key, { ...current, ...descriptor });
+    const replacement = { ...current, ...descriptor };
+    if ('value' in descriptor || 'writable' in descriptor) {
+      delete replacement.get;
+      delete replacement.set;
+    } else if ('get' in descriptor || 'set' in descriptor) {
+      delete replacement.value;
+      delete replacement.writable;
+    }
+    Object.defineProperty(owner, key, replacement);
+    changes.push({ owner, key, descriptor: current });
     if (original && typeof (descriptor.value ?? descriptor.get) === 'function') {
       nativeSources.set(descriptor.value ?? descriptor.get,
         Reflect.apply(originalToString, original, []));
@@ -99,14 +114,40 @@ function createPatcher(win) {
   }
 
   function maskSources() {
-    if (sourceMaskInstalled) return;
-    sourceMaskInstalled = method(win.Function.prototype, 'toString', (target, receiver, args) => {
+    if (maskedToString && win.Function.prototype.toString === maskedToString) return true;
+    const installed = method(win.Function.prototype, 'toString', (target, receiver, args) => {
       if (nativeSources.has(receiver)) return nativeSources.get(receiver);
       return Reflect.apply(target, receiver, args);
     });
+    if (installed) maskedToString = win.Function.prototype.toString;
+    return installed;
   }
 
-  return { replace, method, getter, maskSources };
+  function must(installed, name) {
+    if (!installed) throw new win.Error(`Cannot patch ${name}: the API is absent or locked.`);
+    return true;
+  }
+
+  function transaction(install) {
+    const checkpoint = changes.length;
+    function rollback() {
+      for (let index = changes.length - 1; index >= checkpoint; index--) {
+        const change = changes[index];
+        Object.defineProperty(change.owner, change.key, change.descriptor);
+      }
+      changes.length = checkpoint;
+    }
+    try {
+      const result = install();
+      if (!result) rollback();
+      return result;
+    } catch (error) {
+      rollback();
+      throw error;
+    }
+  }
+
+  return { replace, method, getter, maskSources, must, transaction };
 }
 
 function quantizeHardware(actual, cap) {
@@ -118,26 +159,85 @@ function quantizeHardware(actual, cap) {
 
 function perturbPixels(image, seed, stride, canvasWidth, canvasHeight, x = 0, y = 0) {
   if (Object.prototype.toString.call(image.data) !== '[object Uint8ClampedArray]') return;
+  if (!Number.isSafeInteger(stride) || stride < 1) return;
   const data = image.data;
   const basis = mix32(seed ^ mix32(canvasWidth) ^ mix32(canvasHeight + 0x9e3779b9));
-  for (let row = 0; row < image.height; row++) {
+  const firstRow = Math.max(0, -y);
+  const lastRow = Math.min(image.height, canvasHeight - y);
+  const left = Math.max(0, x);
+  const right = Math.min(canvasWidth, x + image.width);
+  if (left >= right) return;
+  for (let row = firstRow; row < lastRow; row++) {
     const absoluteY = y + row;
-    if (absoluteY < 0 || absoluteY >= canvasHeight) continue;
-    for (let column = 0; column < image.width; column++) {
-      const absoluteX = x + column;
-      if (absoluteX < 0 || absoluteX >= canvasWidth) continue;
-      const offset = (row * image.width + column) * 4;
+    const rowStart = absoluteY * canvasWidth;
+    const firstPixel = rowStart + left;
+    const lastPixel = rowStart + right - 1;
+    // Select one candidate per absolute-coordinate block instead of hashing every pixel.
+    const lastBlock = Math.floor(lastPixel / stride);
+    for (let block = Math.floor(firstPixel / stride); block <= lastBlock; block++) {
+      const value = mix32(basis ^ mix32(block));
+      const coordinate = block * stride + value % stride;
+      if (coordinate < firstPixel || coordinate > lastPixel) continue;
+      const offset = (row * image.width + coordinate - rowStart - x) * 4;
       // Keep transparent and premultiplied-alpha pixels intact.
       if (data[offset + 3] !== 255) continue;
-      const coordinate = absoluteY * canvasWidth + absoluteX;
-      const value = mix32(basis ^ mix32(coordinate));
-      if (value % stride !== 0) continue;
       // Replacing a bit is idempotent, unlike adding fresh random noise.
       for (let channel = 0; channel < 3; channel++) {
         data[offset + channel] = (data[offset + channel] & 254) | ((value >>> (8 + channel)) & 1);
       }
     }
   }
+}
+
+// Source: src/frames.js
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+function installFrames(win, config, seed, patcher, install) {
+  const document = win.document;
+  const proto = win.HTMLIFrameElement?.prototype;
+  const nativeWindow = proto && Object.getOwnPropertyDescriptor(proto, 'contentWindow')?.get;
+  if (!nativeWindow || !win.MutationObserver) return false;
+
+  function visit(frame) {
+    try {
+      const child = Reflect.apply(nativeWindow, frame, []);
+      if (child) install(child);
+    } catch { /* Cross-origin or discarded frame. */ }
+  }
+  function collect(node, frames) {
+    const type = node.nodeType;
+    if (type !== 1 && type !== 9 && type !== 11 || node.isConnected === false) return;
+    if (node.localName === 'iframe') frames.add(node);
+    node.querySelectorAll?.('iframe').forEach(frame => frames.add(frame));
+  }
+
+  patcher.must(patcher.getter(proto, 'contentWindow', child => {
+    if (child) install(child);
+    return child;
+  }), 'iframe.contentWindow');
+  patcher.must(patcher.getter(proto, 'contentDocument', child => {
+    if (child?.defaultView) install(child.defaultView);
+    return child;
+  }), 'iframe.contentDocument');
+
+  const observer = new win.MutationObserver(records => {
+    const frames = new Set();
+    for (const record of records) for (const node of record.addedNodes) collect(node, frames);
+    for (const frame of frames) visit(frame);
+  });
+  const onLoad = event => { if (event.target?.localName === 'iframe') visit(event.target); };
+  try {
+    observer.observe(document, { childList: true, subtree: true });
+    document.addEventListener('load', onLoad, true);
+    const initial = new Set();
+    collect(document, initial);
+    for (const frame of initial) visit(frame);
+  } catch (error) {
+    observer.disconnect();
+    document.removeEventListener('load', onLoad, true);
+    throw error;
+  }
+  return true;
 }
 
 // Source: src/modules/canvas.js
@@ -185,25 +285,26 @@ function installCanvas(win, config, seed, patcher) {
   }
 
   for (const key of ['toDataURL', 'toBlob']) {
-    patcher.method(canvasProto, key, (target, receiver, args) => {
+    patcher.must(patcher.method(canvasProto, key, (target, receiver, args) => {
       let copy;
       try { copy = snapshot(receiver, false); } catch { /* Native call preserves taint and receiver errors. */ }
       // Keep callbacks, coercion, and native exceptions outside the fallback catch.
       return Reflect.apply(target, copy ?? receiver, args);
-    });
+    }), `canvas.${key}`);
   }
 
   if (offscreenProto) {
-    patcher.method(offscreenProto, 'convertToBlob', (target, receiver, args) => {
+    patcher.must(patcher.method(offscreenProto, 'convertToBlob', (target, receiver, args) => {
       let copy;
       try { copy = snapshot(receiver, true); } catch { /* Unsupported or detached surface. */ }
       return Reflect.apply(target, copy ?? receiver, args);
-    });
+    }), 'OffscreenCanvas.convertToBlob');
   }
 
   if (config.canvasReadback) {
     for (const proto of new Set([contextProto, offscreenContextProto])) {
-      patcher.method(proto, 'getImageData', (target, receiver, args) => {
+      if (!proto) continue;
+      patcher.must(patcher.method(proto, 'getImageData', (target, receiver, args) => {
         const coordinates = [];
         const adjusted = [...args];
         if (args.length >= 4) {
@@ -224,7 +325,7 @@ function installCanvas(win, config, seed, patcher) {
             receiver.canvas.width, receiver.canvas.height, x, y);
         }
         return image;
-      });
+      }), '2D.getImageData');
     }
   }
   return true;
@@ -236,39 +337,45 @@ function installCanvas(win, config, seed, patcher) {
 function installNavigator(win, config, seed, patcher) {
   const proto = win.Navigator?.prototype;
   if (!proto) return false;
-  patcher.getter(proto, 'hardwareConcurrency', actual => quantizeHardware(actual, config.hardwareCap));
-  patcher.getter(proto, 'deviceMemory', actual => {
-    if (!Number.isFinite(actual) || actual <= 0) return actual;
-    return Math.min(actual, config.memoryCap);
-  });
-  return true;
+  let installed = false;
+  for (const [key, transform] of [
+    ['hardwareConcurrency', actual => quantizeHardware(actual, config.hardwareCap)],
+    ['deviceMemory', actual => Number.isFinite(actual) && actual > 0 ? Math.min(actual, config.memoryCap) : actual],
+  ]) {
+    if (!Object.hasOwn(proto, key)) continue;
+    patcher.must(patcher.getter(proto, key, transform), `navigator.${key}`);
+    installed = true;
+  }
+  return installed;
 }
 
 function installBattery(win, config, seed, patcher) {
   if (!config.battery) return false;
   const proto = win.Navigator?.prototype;
   if (!proto || !Object.hasOwn(proto, 'getBattery')) return false;
-  return patcher.replace(proto, 'getBattery', { value: undefined });
+  return patcher.must(patcher.replace(proto, 'getBattery', { value: undefined }), 'navigator.getBattery');
 }
 
 function installClientHints(win, config, seed, patcher) {
   if (!config.clientHints || !win.navigator.userAgentData) return false;
   const proto = Object.getPrototypeOf(win.navigator.userAgentData);
-  return patcher.method(proto, 'getHighEntropyValues', (target, receiver, args) =>
+  if (!Object.hasOwn(proto, 'getHighEntropyValues')) return false;
+  return patcher.must(patcher.method(proto, 'getHighEntropyValues', (target, receiver, args) =>
     Reflect.apply(target, receiver, args).then(values => {
-      const result = {};
+      const result = new win.Object();
       for (const key of ['brands', 'mobile', 'platform']) {
         if (Object.hasOwn(values, key)) result[key] = values[key];
       }
       return result;
-    }));
+    })), 'userAgentData.getHighEntropyValues');
 }
 
 function installMediaDevices(win, config, seed, patcher) {
   if (!config.mediaDevices || !win.navigator.mediaDevices) return false;
   const proto = Object.getPrototypeOf(win.navigator.mediaDevices);
-  return patcher.method(proto, 'enumerateDevices', (target, receiver, args) =>
-    Reflect.apply(target, receiver, args).then(devices => devices.filter(device => device.label !== '')));
+  if (!Object.hasOwn(proto, 'enumerateDevices')) return false;
+  return patcher.must(patcher.method(proto, 'enumerateDevices', (target, receiver, args) =>
+    Reflect.apply(target, receiver, args).then(devices => devices.filter(device => device.label !== ''))), 'mediaDevices.enumerateDevices');
 }
 
 // Source: src/modules/webgl.js
@@ -276,9 +383,9 @@ function installMediaDevices(win, config, seed, patcher) {
 
 function installWebGL(win, config, seed, patcher) {
   let installed = false;
-  for (const proto of [win.WebGLRenderingContext?.prototype, win.WebGL2RenderingContext?.prototype]) {
+  for (const proto of new Set([win.WebGLRenderingContext?.prototype, win.WebGL2RenderingContext?.prototype])) {
     if (!proto) continue;
-    installed = patcher.method(proto, 'getParameter', (target, receiver, args) => {
+    patcher.must(patcher.method(proto, 'getParameter', (target, receiver, args) => {
       let parameter;
       const adjusted = [...args];
       if (args.length) {
@@ -291,20 +398,21 @@ function installWebGL(win, config, seed, patcher) {
       const enumValue = parameter >>> 0;
       if ((enumValue === 0x9245 || enumValue === 0x9246) && typeof result === 'string') return 'WebGL';
       return result;
-    }) || installed;
+    }), 'WebGL.getParameter');
+    installed = true;
     if (config.webgl !== 'block-debug') continue;
-    patcher.method(proto, 'getExtension', (target, receiver, args) => {
+    patcher.must(patcher.method(proto, 'getExtension', (target, receiver, args) => {
       // Native conversion/validation happens exactly once, including exotic arguments.
       const result = Reflect.apply(target, receiver, args);
       if (result && win.WebGLDebugRendererInfo && result instanceof win.WebGLDebugRendererInfo) return null;
       // Some engines do not expose an interface constructor for this extension.
       if (result && 'UNMASKED_VENDOR_WEBGL' in result && 'UNMASKED_RENDERER_WEBGL' in result) return null;
       return result;
-    });
-    patcher.method(proto, 'getSupportedExtensions', (target, receiver, args) => {
+    }), 'WebGL.getExtension');
+    patcher.must(patcher.method(proto, 'getSupportedExtensions', (target, receiver, args) => {
       const list = Reflect.apply(target, receiver, args);
       return list?.filter(name => name.toLowerCase() !== 'webgl_debug_renderer_info') ?? list;
-    });
+    }), 'WebGL.getSupportedExtensions');
   }
   return installed;
 }
@@ -334,19 +442,17 @@ function installWebRTC(win, config, seed, patcher) {
       return Reflect.construct(target, adjusted, newTarget);
     },
   });
-  if (!patcher.replace(win, 'RTCPeerConnection', { value: proxy }, Original)) {
-    throw new Error('The peer connection constructor is locked.');
-  }
+  patcher.must(patcher.replace(win, 'RTCPeerConnection', { value: proxy }, Original), 'RTCPeerConnection');
   if (win.webkitRTCPeerConnection === Original) {
-    patcher.replace(win, 'webkitRTCPeerConnection', { value: proxy }, Original);
+    patcher.must(patcher.replace(win, 'webkitRTCPeerConnection', { value: proxy }, Original), 'webkitRTCPeerConnection');
   }
   patcher.replace(Original.prototype, 'constructor', { value: proxy }, Original);
-  patcher.method(Original.prototype, 'setConfiguration', (target, receiver, args) => {
+  patcher.must(patcher.method(Original.prototype, 'setConfiguration', (target, receiver, args) => {
     const adjusted = [...args];
     // Preserve the native missing-required-argument error.
     if (args.length) adjusted[0] = forceRelay(args[0]);
     return Reflect.apply(target, receiver, adjusted);
-  });
+  }), 'RTCPeerConnection.setConfiguration');
   return true;
 }
 
@@ -358,12 +464,13 @@ function installAudio(win, config, seed, patcher) {
   const Original = win.OfflineAudioContext || win.webkitOfflineAudioContext;
   if (!Original) return false;
   const processed = new WeakSet();
+  const nativeGetChannelData = win.AudioBuffer.prototype.getChannelData;
   function protect(buffer) {
     if (!buffer || processed.has(buffer)) return buffer;
     processed.add(buffer);
     const basis = mix32(seed ^ buffer.length ^ buffer.sampleRate);
     for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-      const data = buffer.getChannelData(channel);
+      const data = Reflect.apply(nativeGetChannelData, buffer, [channel]);
       for (let index = 0; index < data.length; index += 64) {
         const value = mix32(basis ^ index ^ mix32(channel));
         // Keep silence silent; never add audible-level dither to output pipelines.
@@ -374,8 +481,8 @@ function installAudio(win, config, seed, patcher) {
     }
     return buffer;
   }
-  patcher.method(Original.prototype, 'startRendering', (target, receiver, args) =>
-    Reflect.apply(target, receiver, args).then(protect));
+  patcher.must(patcher.method(Original.prototype, 'startRendering', (target, receiver, args) =>
+    Reflect.apply(target, receiver, args).then(protect)), 'OfflineAudioContext.startRendering');
   const proxy = new win.Proxy(Original, {
     construct(target, args, newTarget) {
       const context = Reflect.construct(target, args, newTarget);
@@ -385,7 +492,7 @@ function installAudio(win, config, seed, patcher) {
     },
   });
   for (const key of ['OfflineAudioContext', 'webkitOfflineAudioContext']) {
-    if (win[key] === Original) patcher.replace(win, key, { value: proxy }, Original);
+    if (win[key] === Original) patcher.must(patcher.replace(win, key, { value: proxy }, Original), key);
   }
   patcher.replace(Original.prototype, 'constructor', { value: proxy }, Original);
   return true;
@@ -395,65 +502,43 @@ function installAudio(win, config, seed, patcher) {
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 function installPrivacyCore(root, config, version) {
-  const marker = Symbol.for('BrowserPrivacyCore.v6');
+  const marker = Symbol.for('BrowserPrivacyCore');
+  // The alias also stops an enabled 6.x script from stacking on top of V1.
+  const legacyMarker = Symbol.for('BrowserPrivacyCore.v6');
+  const seeds = new Map();
+  const installers = [
+    ['canvas', installCanvas], ['webgl', installWebGL], ['navigator', installNavigator],
+    ['battery', installBattery], ['clientHints', installClientHints],
+    ['mediaDevices', installMediaDevices], ['webrtc', installWebRTC],
+    ['offlineAudio', installAudio], ['frames', installFrames],
+  ];
   function install(win) {
     try {
       // WindowProxy identity survives navigation; only the document's marker is a valid guard.
-      if (win[marker]) return;
+      if (win[marker] || win[legacyMarker]) return;
       // Reading document performs the same-origin check before any patches are attempted.
       const document = win.document;
       if (!document) return;
       const modules = {};
       const status = Object.freeze({ version, profile: config.id, modules });
-      Object.defineProperty(win, marker, { value: status, configurable: false });
-      const seed = getSeed(win);
+      Object.defineProperty(win, marker, { value: status });
+      try { Object.defineProperty(win, legacyMarker, { value: status }); } catch { /* Legacy collision. */ }
+      const origin = getOrigin(win);
+      if (!seeds.has(origin)) seeds.set(origin, getSeed(win));
+      const seed = seeds.get(origin);
       const patcher = createPatcher(win);
-      for (const [name, installer] of Object.entries({
-        canvas: installCanvas,
-        webgl: installWebGL,
-        navigator: installNavigator,
-        battery: installBattery,
-        clientHints: installClientHints,
-        mediaDevices: installMediaDevices,
-        webrtc: installWebRTC,
-        offlineAudio: installAudio,
-      })) {
+      for (const [name, installer] of installers) {
         try {
-          modules[name] = installer(win, config, seed, patcher) ? 'enabled' : 'inactive';
+          modules[name] = patcher.transaction(() => installer(win, config, seed, patcher, install))
+            ? 'enabled' : 'inactive';
         } catch {
           // Optional/locked-down APIs must not prevent the other modules from starting.
           modules[name] = 'unavailable';
         }
       }
-      try { patcher.maskSources(); } catch { /* Cosmetic best effort. */ }
-
-      function visit(frame) {
-        try { if (frame.contentWindow) install(frame.contentWindow); } catch { /* Cross-origin frame. */ }
-      }
-      function scan(node) {
-        if (node.nodeType !== 1 && node.nodeType !== 9) return;
-        if (node.localName === 'iframe') visit(node);
-        node.querySelectorAll?.('iframe').forEach(visit);
-      }
       try {
-        // Also cover synchronous access to an about:blank frame before the observer runs.
-        const proto = win.HTMLIFrameElement?.prototype;
-        patcher.getter(proto, 'contentWindow', child => { if (child) install(child); return child; });
-        patcher.getter(proto, 'contentDocument', child => {
-          if (child?.defaultView) install(child.defaultView);
-          return child;
-        });
-        const observer = new win.MutationObserver(records => {
-          for (const record of records) for (const node of record.addedNodes) scan(node);
-        });
-        // Observe Document itself, including document-start before an html element exists.
-        observer.observe(document, { childList: true, subtree: true });
-        document.addEventListener('load', event => {
-          if (event.target?.localName === 'iframe') visit(event.target);
-        }, true);
-        scan(document);
-        modules.frames = 'enabled';
-      } catch { modules.frames = 'unavailable'; }
+        modules.nativeSources = patcher.maskSources() ? 'enabled' : 'unavailable';
+      } catch { modules.nativeSources = 'unavailable'; }
       Object.freeze(modules);
     } catch { /* Restricted, discarded, or inaccessible realm. */ }
   }
@@ -475,5 +560,5 @@ const CONFIG = Object.freeze({
   "mediaDevices": false,
   "webrtc": "native"
 });
-installPrivacyCore(window, CONFIG, "6.0.0");
+installPrivacyCore(window, CONFIG, "1.0.0");
 })();

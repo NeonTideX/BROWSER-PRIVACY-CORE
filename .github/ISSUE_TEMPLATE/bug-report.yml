@@ -28,5 +28,5 @@ body:
     id: diagnostics
     attributes:
       label: Installation diagnostics
-      description: Result of window[Symbol.for('BrowserPrivacyCore.v6')], without browsing data or secrets.
+      description: Result of window[Symbol.for('BrowserPrivacyCore')], without browsing data or secrets.
       render: json

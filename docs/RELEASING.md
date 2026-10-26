@@ -22,11 +22,13 @@ A source-only folder without `.git` can run the build and tests, but needs a fre
 For this release:
 
 ```sh
-git tag -a v6.0.0 -m "Browser Privacy Core 6.0.0"
-git push origin v6.0.0
+git tag -a v1.0.0 -m "Browser Privacy Core V1"
+git push origin v1.0.0
 ```
 
 The tag workflow verifies the package/tag version match, runs the Chromium suite, and uploads a release artifact containing scripts and source. It does not create a public GitHub Release automatically. Download the artifact, review it, and attach it to a GitHub Release along with both installable script files and `SHA256SUMS`. GitHub also offers source archives for the tag.
+
+V1 intentionally resets version numbering from 6.x to 1.x. Mark the V1 GitHub Release as latest explicitly, and include the manual-reinstallation instructions in its release notes. The userscript namespace changes to `urn:browser-privacy-core:v1`; existing 6.x installs will not automatically accept a numerically lower version.
 
 Do not publish only the generated files while withholding corresponding source and build instructions. Keep the GPL license and notices with the source and release assets.
 

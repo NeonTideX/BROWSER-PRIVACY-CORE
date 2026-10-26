@@ -22,18 +22,16 @@ export function installWebRTC(win, config, seed, patcher) {
       return Reflect.construct(target, adjusted, newTarget);
     },
   });
-  if (!patcher.replace(win, 'RTCPeerConnection', { value: proxy }, Original)) {
-    throw new Error('The peer connection constructor is locked.');
-  }
+  patcher.must(patcher.replace(win, 'RTCPeerConnection', { value: proxy }, Original), 'RTCPeerConnection');
   if (win.webkitRTCPeerConnection === Original) {
-    patcher.replace(win, 'webkitRTCPeerConnection', { value: proxy }, Original);
+    patcher.must(patcher.replace(win, 'webkitRTCPeerConnection', { value: proxy }, Original), 'webkitRTCPeerConnection');
   }
   patcher.replace(Original.prototype, 'constructor', { value: proxy }, Original);
-  patcher.method(Original.prototype, 'setConfiguration', (target, receiver, args) => {
+  patcher.must(patcher.method(Original.prototype, 'setConfiguration', (target, receiver, args) => {
     const adjusted = [...args];
     // Preserve the native missing-required-argument error.
     if (args.length) adjusted[0] = forceRelay(args[0]);
     return Reflect.apply(target, receiver, adjusted);
-  });
+  }), 'RTCPeerConnection.setConfiguration');
   return true;
 }

@@ -16,7 +16,8 @@ for (const filename of ['LICENSE', 'README.md', 'CHANGELOG.md']) {
 const source = join(directory, 'source');
 await mkdir(source, { recursive: true });
 for (const name of ['src', 'scripts', 'tests', 'docs', 'dist', '.github', '.editorconfig', '.gitattributes', '.gitignore',
-  'package.json', 'package-lock.json', 'LICENSE', 'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'SECURITY.md']) {
+  'package.json', 'package-lock.json', 'LICENSE', 'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'SECURITY.md',
+  'CODE_OF_CONDUCT.md', 'SUPPORT.md']) {
   await cp(join(root, name), join(source, name), { recursive: true });
 }
 await writeFile(join(directory, 'SOURCE.txt'),

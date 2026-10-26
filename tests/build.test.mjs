@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto';
 import { outputs, root } from '../scripts/build.mjs';
 
 test('distributables are deterministic, standalone, licensed and synchronized', async () => {
+  const { version } = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
   const first = await outputs();
   assert.deepEqual(first, await outputs());
   for (const [filename, body] of first) {
@@ -15,6 +16,9 @@ test('distributables are deterministic, standalone, licensed and synchronized', 
     assert.ok(body.startsWith('// ==UserScript==\n'));
     assert.match(body, /@license\s+GPL-3\.0-or-later/);
     assert.match(body, /@inject-into\s+page/);
+    assert.ok(body.includes(`@version      ${version}\n`));
+    assert.ok(body.includes(`@name         Browser Privacy Core V${version.split('.')[0]} - `));
+    assert.match(body, /@namespace\s+urn:browser-privacy-core:v1/);
     assert.ok(body.includes(`@downloadURL  https://raw.githubusercontent.com/NeonTideX/browser-privacy-core/main/dist/${filename}`));
     assert.doesNotMatch(body, /^\s*(import|export)\s/m);
     assert.doesNotMatch(body, /@require|eval\(|new Function\(/);

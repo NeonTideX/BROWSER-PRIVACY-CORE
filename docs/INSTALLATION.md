@@ -4,6 +4,8 @@
 
 Install exactly one script from `dist/`, disable older versions, and reload every tab where you want the new version to apply. Removing or disabling a script does not restore already-patched document prototypes; reload the page. Do not combine this project with other fingerprint-spoofing scripts without testing the interaction.
 
+V1 is published as version `1.0.0`, following the previous `6.0.0` release. This is an intentional version-line reset. Install it manually using the V1 links; do not wait for a numeric downgrade to be offered as an automatic update. The new userscript namespace creates a separate install identity. Disable all old profiles before reloading. V1 retains a legacy guard alias to avoid stacking if a 6.x copy is still enabled.
+
 The metadata uses `@grant none`, `@inject-into page`, and `@run-at document-start`. Violentmonkey documents the required page realm and timing behavior in its [metadata reference](https://violentmonkey.github.io/api/metadata-block/). Some browsers require developer mode or a separate permission to run userscripts. Check your manager's own instructions.
 
 The script intentionally requests page injection instead of silently falling back to an isolated content-script realm. An isolated realm can appear to run while leaving page-visible browser APIs unchanged. CSP and extension restrictions can prevent execution. Internal browser pages, extension pages, privileged documents, and file URLs are not matched.
@@ -20,7 +22,7 @@ Do not install both profiles as a way to increase protection. The guard keeps th
 
 ## Diagnose
 
-Run `window[Symbol.for('BrowserPrivacyCore.v6')]` in the page console. Select the relevant frame in developer tools when checking a frame.
+Run `window[Symbol.for('BrowserPrivacyCore')]` in the page console. Select the relevant frame in developer tools when checking a frame.
 
 | Symptom | Check |
 | --- | --- |
@@ -37,4 +39,4 @@ No script sends telemetry or silently reports failures to a server. Module failu
 
 ## Reset session values
 
-The storage key is `__browser_privacy_core_seed_v6`. Removing that key from the current origin's session storage and reloading generates a new seed. Closing a tab normally ends the session, but browser session restoration and duplicated tabs can preserve or copy session storage. A seed reset changes selected exported pixel values; it does not reset cookies, accounts, or browser storage elsewhere.
+The storage key is `__browser_privacy_core_seed_v1`. Removing that key from the current origin's session storage and reloading generates a new seed. Closing a tab normally ends the session, but browser session restoration and duplicated tabs can preserve or copy session storage. A seed reset changes selected exported pixel values; it does not reset cookies, accounts, or browser storage elsewhere.
