@@ -33,6 +33,7 @@ test('browser and release containers match the pinned Playwright dependency', as
   for (const name of ['ci.yml', 'release.yml']) {
     const workflow = await readFile(join(root, '.github/workflows', name), 'utf8');
     assert.ok(workflow.includes(`image: ${image}`), `${name} must use matching browser binaries`);
+    assert.ok(workflow.includes('options: --user 1001 --ipc=host'), 'Browser user must own the GitHub container home');
     assert.ok(!workflow.includes('playwright install --with-deps'), 'Container supplies system dependencies');
   }
 });

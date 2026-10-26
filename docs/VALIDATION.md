@@ -17,4 +17,3 @@ New browser checks cover locked canvas/RTC rollback, continued operation of unre
 `npm run benchmark` measured the masking phase for an opaque 1920x1080 RGBA surface: median of nine runs after three warmups. The previous per-pixel scan took 20.225 ms (Stable) and 20.181 ms (Hardened); V1 took 0.052 ms and 0.362 ms respectively on this machine. This excludes canvas copying, codecs, and GPU transfer and is not an end-to-end speed claim or CI threshold.
 
 Hosted runs use the [CI workflow](https://github.com/NeonTideX/browser-privacy-core/actions/workflows/ci.yml). The local results do not establish userscript-manager injection, arbitrary website compatibility, Safari/mobile support, or real TURN connectivity. Use the manual matrix in [TESTING.md](TESTING.md).
-
