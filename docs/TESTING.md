@@ -56,7 +56,7 @@ Optional environment variables:
 
 Browser checks cover both profiles, repeatable PNGs, blob/data URL equality, direct-read policy, crop/negative extents, invalid arguments, source preservation, OffscreenCanvas context selection, generic WebGL reporting, native API identity, same-origin frames and navigation, audio promise/event consistency, high-entropy hints, device filtering, relay reconfiguration/subclassing, duplicate profiles, reload stability, denied storage, and absent optional APIs. Unsupported optional interfaces are reported as skipped rather than counted as tested.
 
-The GitHub workflow runs core checks on Linux/Windows with Node.js 22/24 and browser checks on Linux Chromium/Firefox. A workflow definition is not evidence of a successful hosted run; inspect the actual Actions results after publishing.
+The GitHub workflow runs core checks on Linux/Windows with Node.js 22/24. Linux Chromium/Firefox checks use the official Playwright container with browser/system dependencies already installed. The image version must match the pinned npm dependency; a build test enforces that match. See the [official container documentation](https://playwright.dev/docs/docker). A workflow definition is not evidence of a successful hosted run; inspect the actual Actions results after publishing.
 
 ## Manual manager and site matrix
 

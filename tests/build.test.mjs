@@ -26,3 +26,13 @@ test('distributables are deterministic, standalone, licensed and synchronized', 
     assert.ok(first.get('SHA256SUMS').includes(`${hash}  ${filename}`));
   }
 });
+
+test('browser and release containers match the pinned Playwright dependency', async () => {
+  const { devDependencies } = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
+  const image = `mcr.microsoft.com/playwright:v${devDependencies.playwright}-noble`;
+  for (const name of ['ci.yml', 'release.yml']) {
+    const workflow = await readFile(join(root, '.github/workflows', name), 'utf8');
+    assert.ok(workflow.includes(`image: ${image}`), `${name} must use matching browser binaries`);
+    assert.ok(!workflow.includes('playwright install --with-deps'), 'Container supplies system dependencies');
+  }
+});

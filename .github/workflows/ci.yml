@@ -31,7 +31,10 @@ jobs:
 
   browser:
     name: Browser / ${{ matrix.browser }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --ipc=host
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -47,7 +50,6 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run check
-      - run: npx playwright install --with-deps ${{ matrix.browser }}
       - run: npm run test:browser
         env:
           BROWSER_ENGINE: ${{ matrix.browser }}

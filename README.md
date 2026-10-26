@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/NeonTideX/browser-privacy-core)](https://github.com/NeonTideX/browser-privacy-core/releases/latest)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
 
-Two browser privacy userscripts, one shared core. A clean successor to Browser Privacy Core V5.5, V5.6, and V5.7.
+Two standalone browser privacy userscripts built from one lightweight, auditable core.
 
 **Stable** favors everyday compatibility. **Hardened** trades more compatibility for stronger restrictions on selected fingerprinting surfaces. Both run locally, make no telemetry requests, and ship as readable, standalone JavaScript with no runtime dependencies.
 
@@ -103,8 +103,8 @@ Edit `src/`, then rebuild. Commit `dist/` together with source changes; CI rejec
 - [Security policy](SECURITY.md)
 
 
-## License and provenance
+## License
 
 Licensed under **GNU GPL version 3 or any later version**, SPDX identifier **`GPL-3.0-or-later`**. See [`LICENSE`](LICENSE). The license text is the unmodified GNU GPL v3; the “or later” choice is specified by this notice, package metadata, and source headers.
 
-The design consolidates three user-supplied V5.x scripts. [Migration notes](docs/MIGRATION.md) record the source hashes and explain intentional replacements. This repository includes the complete corresponding source and build instructions. Distribute that source and the GPL notices with modified releases. Playwright is a development-only dependency under its own license; it is not embedded in the userscripts.
+This repository includes complete corresponding source and reproducible build instructions. Distribute that source and the GPL notices with modified releases. [Migration notes](docs/MIGRATION.md) explain installation and profile switching. Playwright is a development-only dependency under its own license; it is not embedded in the userscripts.
