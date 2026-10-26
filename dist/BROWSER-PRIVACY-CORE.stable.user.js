@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name         Browser Privacy Core V1 - Stable
+// @name         BROWSER PRIVACY CORE - Stable
 // @namespace    urn:browser-privacy-core:v1
-// @homepageURL  https://github.com/NeonTideX/browser-privacy-core
-// @supportURL   https://github.com/NeonTideX/browser-privacy-core/issues
-// @downloadURL  https://raw.githubusercontent.com/NeonTideX/browser-privacy-core/main/dist/browser-privacy-core.stable.user.js
-// @updateURL    https://raw.githubusercontent.com/NeonTideX/browser-privacy-core/main/dist/browser-privacy-core.stable.user.js
+// @homepageURL  https://github.com/NeonTideX/BROWSER-PRIVACY-CORE
+// @supportURL   https://github.com/NeonTideX/BROWSER-PRIVACY-CORE/issues
+// @downloadURL  https://raw.githubusercontent.com/NeonTideX/BROWSER-PRIVACY-CORE/main/dist/BROWSER-PRIVACY-CORE.stable.user.js
+// @updateURL    https://raw.githubusercontent.com/NeonTideX/BROWSER-PRIVACY-CORE/main/dist/BROWSER-PRIVACY-CORE.stable.user.js
 // @version      1.0.0
 // @description  Compatibility-first canvas and hardware privacy.
 // @match        http://*/*

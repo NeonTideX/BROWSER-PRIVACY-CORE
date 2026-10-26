@@ -21,5 +21,5 @@ for (const name of ['src', 'scripts', 'tests', 'docs', 'dist', '.github', '.edit
   await cp(join(root, name), join(source, name), { recursive: true });
 }
 await writeFile(join(directory, 'SOURCE.txt'),
-  `Browser Privacy Core ${version}\nLicense: GPL-3.0-or-later\nComplete corresponding source and build instructions are included in source/.\n`);
+  `BROWSER PRIVACY CORE ${version}\nLicense: GPL-3.0-or-later\nComplete corresponding source and build instructions are included in source/.\n`);
 console.log(`Prepared release/v${version}/. Publish source together with the scripts.`);

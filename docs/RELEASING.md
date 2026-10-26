@@ -2,11 +2,11 @@
 
 ## Repository checkout
 
-The public repository is [NeonTideX/browser-privacy-core](https://github.com/NeonTideX/browser-privacy-core), with `main` as its default branch. Use a Git checkout for the release commands below:
+The public repository is [NeonTideX/BROWSER-PRIVACY-CORE](https://github.com/NeonTideX/BROWSER-PRIVACY-CORE), with `main` as its default branch. Use a Git checkout for the release commands below:
 
 ```sh
-git clone https://github.com/NeonTideX/browser-privacy-core.git
-cd browser-privacy-core
+git clone https://github.com/NeonTideX/BROWSER-PRIVACY-CORE.git
+cd BROWSER-PRIVACY-CORE
 ```
 
 A source-only folder without `.git` can run the build and tests, but needs a fresh checkout before Git commands or pushes are available. GitHub Desktop can also clone this repository.
@@ -22,7 +22,7 @@ A source-only folder without `.git` can run the build and tests, but needs a fre
 For this release:
 
 ```sh
-git tag -a v1.0.0 -m "Browser Privacy Core V1"
+git tag -a v1.0.0 -m "BROWSER PRIVACY CORE V1"
 git push origin v1.0.0
 ```
 

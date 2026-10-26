@@ -1,12 +1,12 @@
 # Support
 
-Start with the [README](README.md) and [changelog](CHANGELOG.md). Downloads and release notes are available on the [Releases page](https://github.com/NeonTideX/browser-privacy-core/releases).
+Start with the [README](README.md) and [changelog](CHANGELOG.md). Downloads and release notes are available on the [Releases page](https://github.com/NeonTideX/BROWSER-PRIVACY-CORE/releases).
 
 ## Bugs and feature requests
 
-Use the [issue forms](https://github.com/NeonTideX/browser-privacy-core/issues/new/choose) and search existing reports first. Include the active profile, browser and userscript manager versions, a minimal reproduction, and the installation diagnostics described in the README.
+Use the [issue forms](https://github.com/NeonTideX/BROWSER-PRIVACY-CORE/issues/new/choose) and search existing reports first. Include the active profile, browser and userscript manager versions, a minimal reproduction, and the installation diagnostics described in the README.
 
-Security vulnerabilities belong in [private vulnerability reports](https://github.com/NeonTideX/browser-privacy-core/security/advisories/new), as described in [SECURITY.md](SECURITY.md).
+Security vulnerabilities belong in [private vulnerability reports](https://github.com/NeonTideX/BROWSER-PRIVACY-CORE/security/advisories/new), as described in [SECURITY.md](SECURITY.md).
 
 ## Contributions and expectations
 

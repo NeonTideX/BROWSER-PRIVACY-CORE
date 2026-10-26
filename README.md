@@ -1,7 +1,6 @@
-# Browser Privacy Core V1
+# BROWSER PRIVACY CORE
 
-[![CI](https://github.com/NeonTideX/browser-privacy-core/actions/workflows/ci.yml/badge.svg)](https://github.com/NeonTideX/browser-privacy-core/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/NeonTideX/browser-privacy-core)](https://github.com/NeonTideX/browser-privacy-core/releases/latest)
+[![CI](https://github.com/NeonTideX/BROWSER-PRIVACY-CORE/actions/workflows/ci.yml/badge.svg)](https://github.com/NeonTideX/BROWSER-PRIVACY-CORE/actions/workflows/ci.yml)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
 
 Two standalone browser privacy userscripts built from one lightweight, auditable core.
@@ -10,13 +9,13 @@ Two standalone browser privacy userscripts built from one lightweight, auditable
 
 ## Install
 
-**Migrating from 6.x? Reinstall V1 manually.** V1 starts a new `1.x` version line with new userscript names and namespace. Managers generally do not treat `1.0.0` as an upgrade from `6.0.0`. Disable or remove the old scripts, install exactly one V1 profile, and reload. The compatibility guard prevents the old and new cores from stacking; the first active core wins until reload.
+**Replacing an older installation? Reinstall manually.** Disable or remove previous copies, install exactly one profile, and reload existing tabs. The compatibility guard prevents multiple cores from stacking in one document.
 
 1. Use a userscript manager that supports execution in the page's JavaScript realm. Violentmonkey is the primary target; Tampermonkey is a compatibility target that needs manual verification.
 2. Install one profile from the public repository:
-   - [Install Stable](https://raw.githubusercontent.com/NeonTideX/browser-privacy-core/main/dist/browser-privacy-core.stable.user.js) — recommended for everyday use.
-   - [Install Hardened](https://raw.githubusercontent.com/NeonTideX/browser-privacy-core/main/dist/browser-privacy-core.hardened.user.js) — stricter restrictions, with the tradeoffs below.
-3. Confirm installation in your manager, disable all V5.x/6.x versions and other copies, then reload open tabs.
+   - [Install Stable](https://raw.githubusercontent.com/NeonTideX/BROWSER-PRIVACY-CORE/main/dist/BROWSER-PRIVACY-CORE.stable.user.js) — recommended for everyday use.
+   - [Install Hardened](https://raw.githubusercontent.com/NeonTideX/BROWSER-PRIVACY-CORE/main/dist/BROWSER-PRIVACY-CORE.hardened.user.js) — stricter restrictions, with the tradeoffs below.
+3. Confirm installation in your manager, disable previous versions and other copies, then reload open tabs.
 
 Install **one profile at a time**. The first profile installed in a document wins. You do not need Node.js or a build step to use either script. If opening a local file does not launch your manager, create a new script in its editor and paste the complete file. On GitHub, open the script's **Raw** view.
 
@@ -82,7 +81,7 @@ npm run benchmark
 
 `npm run check` works without installing dependencies because the build and unit tests use Node built-ins. Playwright is the only direct development dependency and is pinned in `package-lock.json`. CI additionally runs the browser suite on Firefox. Real userscript-manager injection remains a manual test; see [testing](docs/TESTING.md).
 
-V1 selects one pixel candidate per deterministic coordinate block instead of hashing every pixel. Crop alignment, source preservation, alpha handling, and idempotence are retained. The benchmark compares masking cost with the previous published scan; codec and canvas-copy costs are excluded, and timings depend on the machine.
+The core selects one pixel candidate per deterministic coordinate block instead of hashing every pixel. Crop alignment, source preservation, alpha handling, and idempotence are retained. The benchmark compares masking cost with the previous published scan; codec and canvas-copy costs are excluded, and timings depend on the machine.
 
 ```text
 src/                    Shared core and profile configuration
@@ -98,7 +97,7 @@ Edit `src/`, then rebuild. Commit `dist/` together with source changes; CI rejec
 
 ## Project resources
 
-- [Changelog](CHANGELOG.md) and [Releases](https://github.com/NeonTideX/browser-privacy-core/releases)
+- [Changelog](CHANGELOG.md) and [Releases](https://github.com/NeonTideX/BROWSER-PRIVACY-CORE/releases)
 - [Contributing](CONTRIBUTING.md), [community conduct](CODE_OF_CONDUCT.md), and [support](SUPPORT.md)
 - [Security policy](SECURITY.md)
 

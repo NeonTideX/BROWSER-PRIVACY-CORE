@@ -8,8 +8,8 @@ const port = Number(process.env.PORT ?? 8787);
 if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('PORT must be an integer from 0 to 65535.');
 const routes = new Map([
   ['/', ['docs/diagnostics.html', 'text/html; charset=utf-8']],
-  ['/dist/browser-privacy-core.stable.user.js', ['dist/browser-privacy-core.stable.user.js', 'text/javascript; charset=utf-8']],
-  ['/dist/browser-privacy-core.hardened.user.js', ['dist/browser-privacy-core.hardened.user.js', 'text/javascript; charset=utf-8']],
+  ['/dist/BROWSER-PRIVACY-CORE.stable.user.js', ['dist/BROWSER-PRIVACY-CORE.stable.user.js', 'text/javascript; charset=utf-8']],
+  ['/dist/BROWSER-PRIVACY-CORE.hardened.user.js', ['dist/BROWSER-PRIVACY-CORE.hardened.user.js', 'text/javascript; charset=utf-8']],
 ]);
 const server = createServer(async (request, response) => {
   const route = routes.get(request.url?.split('?')[0]);

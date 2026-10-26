@@ -22,15 +22,15 @@ export async function outputs() {
   }));
   const output = new Map();
   for (const config of Object.values(profiles)) {
-    const filename = `browser-privacy-core.${config.id}.user.js`;
+    const filename = `BROWSER-PRIVACY-CORE.${config.id}.user.js`;
     const metadata = [
       '// ==UserScript==',
-      `// @name         Browser Privacy Core V${version.split('.')[0]} - ${config.name}`,
+      `// @name         BROWSER PRIVACY CORE - ${config.name}`,
       '// @namespace    urn:browser-privacy-core:v1',
-      '// @homepageURL  https://github.com/NeonTideX/browser-privacy-core',
-      '// @supportURL   https://github.com/NeonTideX/browser-privacy-core/issues',
-      `// @downloadURL  https://raw.githubusercontent.com/NeonTideX/browser-privacy-core/main/dist/${filename}`,
-      `// @updateURL    https://raw.githubusercontent.com/NeonTideX/browser-privacy-core/main/dist/${filename}`,
+      '// @homepageURL  https://github.com/NeonTideX/BROWSER-PRIVACY-CORE',
+      '// @supportURL   https://github.com/NeonTideX/BROWSER-PRIVACY-CORE/issues',
+      `// @downloadURL  https://raw.githubusercontent.com/NeonTideX/BROWSER-PRIVACY-CORE/main/dist/${filename}`,
+      `// @updateURL    https://raw.githubusercontent.com/NeonTideX/BROWSER-PRIVACY-CORE/main/dist/${filename}`,
       `// @version      ${version}`,
       `// @description  ${config.id === 'stable' ? 'Compatibility-first canvas and hardware privacy.' : 'Stronger readback privacy, reduced entropy, and relay-only WebRTC.'}`,
       '// @match        http://*/*',

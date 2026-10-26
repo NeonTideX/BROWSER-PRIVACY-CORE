@@ -23,7 +23,7 @@ const server = createServer(async (request, response) => {
     response.end(await readFile(join(root, 'docs/diagnostics.html')));
   } else {
     response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    response.end('<!doctype html><html lang="en"><title>Browser Privacy Core Test</title><body>Test fixture</body></html>');
+    response.end('<!doctype html><html lang="en"><title>BROWSER PRIVACY CORE Test</title><body>Test fixture</body></html>');
   }
 });
 await new Promise(resolve => server.listen(0, '0.0.0.0', resolve));
@@ -43,7 +43,7 @@ try {
   });
   console.log(`Browser: ${browser.version()}`);
   for (const profile of ['stable', 'hardened']) {
-    const script = await readFile(join(root, 'dist', `browser-privacy-core.${profile}.user.js`), 'utf8');
+    const script = await readFile(join(root, 'dist', `BROWSER-PRIVACY-CORE.${profile}.user.js`), 'utf8');
     const context = await browser.newContext();
     const page = await context.newPage();
     const errors = [];
@@ -289,7 +289,7 @@ try {
     }
     for (const key of ['frames', 'frameAfterNavigation', 'nestedFrames', 'taint', 'audioConsistent', 'audioPolicy', 'audioBounded', 'media', 'battery']) check(more[key], `${profile}: ${key}`);
     // A second profile must not stack wrappers or silently switch the running profile.
-    const otherScript = await readFile(join(root, 'dist', `browser-privacy-core.${profile === 'stable' ? 'hardened' : 'stable'}.user.js`), 'utf8');
+    const otherScript = await readFile(join(root, 'dist', `BROWSER-PRIVACY-CORE.${profile === 'stable' ? 'hardened' : 'stable'}.user.js`), 'utf8');
     await page.addScriptTag({ content: otherScript });
     check(await page.evaluate(profile => window[Symbol.for('BrowserPrivacyCore')].profile === profile, profile), `${profile}: duplicate install guard`);
     await context.addInitScript({ content: script });
@@ -314,7 +314,7 @@ try {
   });
   const restrictedPage = await restricted.newPage();
   await restrictedPage.goto(origin);
-  await restrictedPage.addScriptTag({ content: await readFile(join(root, 'dist/browser-privacy-core.hardened.user.js'), 'utf8') });
+  await restrictedPage.addScriptTag({ content: await readFile(join(root, 'dist/BROWSER-PRIVACY-CORE.hardened.user.js'), 'utf8') });
   check(await restrictedPage.evaluate(() => window[Symbol.for('BrowserPrivacyCore')]?.modules.canvas === 'enabled'), 'restricted storage and missing APIs');
   check(await restrictedPage.evaluate(() => {
     const frame = document.createElement('iframe'); document.body.append(frame);
@@ -336,7 +336,7 @@ try {
     Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', { configurable: false, writable: false });
     if (window.RTCPeerConnection) Object.defineProperty(RTCPeerConnection.prototype, 'setConfiguration', { configurable: false, writable: false });
   });
-  await lockedPage.addScriptTag({ content: await readFile(join(root, 'dist/browser-privacy-core.hardened.user.js'), 'utf8') });
+  await lockedPage.addScriptTag({ content: await readFile(join(root, 'dist/BROWSER-PRIVACY-CORE.hardened.user.js'), 'utf8') });
   const rollback = await lockedPage.evaluate(() => ({
     canvas: window[Symbol.for('BrowserPrivacyCore')].modules.canvas === 'unavailable' && HTMLCanvasElement.prototype.toDataURL === __locked.url,
     rtc: !__locked.rtc || window[Symbol.for('BrowserPrivacyCore')].modules.webrtc === 'unavailable' &&
@@ -355,12 +355,12 @@ try {
     window.__legacyURL = HTMLCanvasElement.prototype.toDataURL;
     Object.defineProperty(window, Symbol.for('BrowserPrivacyCore.v6'), { value: { version: '6.0.0' } });
   });
-  await legacyPage.addScriptTag({ content: await readFile(join(root, 'dist/browser-privacy-core.hardened.user.js'), 'utf8') });
+  await legacyPage.addScriptTag({ content: await readFile(join(root, 'dist/BROWSER-PRIVACY-CORE.hardened.user.js'), 'utf8') });
   check(await legacyPage.evaluate(() => !window[Symbol.for('BrowserPrivacyCore')] &&
     HTMLCanvasElement.prototype.toDataURL === __legacyURL), 'legacy 6.x installation prevents mixed-version stacking');
   await legacy.close();
   const diagnosticContext = await browser.newContext();
-  await diagnosticContext.addInitScript({ content: await readFile(join(root, 'dist/browser-privacy-core.hardened.user.js'), 'utf8') });
+  await diagnosticContext.addInitScript({ content: await readFile(join(root, 'dist/BROWSER-PRIVACY-CORE.hardened.user.js'), 'utf8') });
   const diagnosticPage = await diagnosticContext.newPage();
   await diagnosticPage.goto(`${origin}/diagnostics`);
   await diagnosticPage.getByRole('button', { name: 'Run local probes' }).click();

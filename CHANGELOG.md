@@ -23,5 +23,5 @@ Changes after the latest published version will be recorded here.
 
 - Run hosted browser checks in a matching preinstalled Playwright container.
 
-[Unreleased]: https://github.com/NeonTideX/browser-privacy-core/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/NeonTideX/browser-privacy-core/releases/tag/v1.0.0
+[Unreleased]: https://github.com/NeonTideX/BROWSER-PRIVACY-CORE/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/NeonTideX/BROWSER-PRIVACY-CORE/releases/tag/v1.0.0
